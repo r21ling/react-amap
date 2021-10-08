@@ -30,7 +30,30 @@ const DrillDownLayer = ({ onChage }) => {
               console.error(error);
               return;
             }
-            const features = areaNode.getSubFeatures();
+            const features = areaNode
+              .getSubFeatures()
+              .filter((item) => item.properties.name !== '三沙市')
+              .map((item) => {
+                if (item.properties.name === '海南省') {
+                  return {
+                    ...item,
+                    geometry: {
+                      ...item.geometry,
+                      coordinates: item.geometry.coordinates.slice(0, 1),
+                    },
+                  };
+                }
+                return {
+                  ...item,
+                  properties: {
+                    ...item.properties,
+                    name: item.properties.name.replace(
+                      /省|市|自治区|特别行政区|壮族|回族|维吾尔/g,
+                      ''
+                    ),
+                  },
+                };
+              });
             const areaProps = areaNode.getProps();
             // 记录当前路径
             districtExplorer.locatePosition(
@@ -44,6 +67,8 @@ const DrillDownLayer = ({ onChage }) => {
                 locateBreadcrumbRef.current = routeFeatures
                   .slice(0, roteIndexMap[areaProps.level])
                   .map((area) => area.properties);
+
+                onChage?.(locateBreadcrumbRef.current, areaProps);
               }
             );
             const mapJSON = {
@@ -52,27 +77,6 @@ const DrillDownLayer = ({ onChage }) => {
             };
             echarts.registerMap(target, mapJSON);
             const geoData = features.map((item) => item.properties);
-            // const isChina = target === '中国';
-            // const isHainan = target === '海南省';
-            // const layoutFactory = () => {
-            //   if (isChina) {
-            //     return {
-            //       layoutCenter: ['50%', '65%'],
-            //       layoutSize: '115%',
-            //     };
-            //   }
-            //   if (isHainan) {
-            //     return {
-            //       layoutCenter: ['100%', '340%'],
-            //       layoutSize: '660%',
-            //     };
-            //   }
-            //   return {
-            //     layoutCenter: undefined,
-            //     layoutSize: undefined,
-            //   };
-            // };
-
             chartRef.current.setOption({
               // tooltip: {
               //   trigger: 'item'
@@ -81,36 +85,8 @@ const DrillDownLayer = ({ onChage }) => {
                 show: false,
                 map: target,
                 // roam: 'scale',
-                // ...layoutFactory(),
               },
               series: [
-                // {
-                //   name: 'Top5',
-                //   type: 'effectScatter',
-                //   coordinateSystem: 'geo',
-                //   data: [
-                //     {
-                //       name: '广东省',
-                //       value: 20
-                //     }
-                //   ],
-                //   symbolSize: 20,
-                //   showEffectOn: 'emphasis',
-                //   rippleEffect: {
-                //     brushType: 'stroke'
-                //   },
-                //   label: {
-                //     formatter: '{b}',
-                //     position: 'right',
-                //     show: true
-                //   },
-                //   itemStyle: {
-                //     color: '#f4e925',
-                //     shadowBlur: 10,
-                //     shadowColor: '#333'
-                //   },
-                //   zlevel: 1
-                // },
                 // {
                 //   type: 'effectScatter', //点
                 //   coordinateSystem: 'geo',
@@ -132,7 +108,6 @@ const DrillDownLayer = ({ onChage }) => {
                   type: 'map',
                   // roam: 'scale',
                   map: target,
-                  // ...layoutFactory(),
                   itemStyle: {
                     borderWidth: 2,
                     shadowOffsetY: 4,
@@ -147,21 +122,28 @@ const DrillDownLayer = ({ onChage }) => {
                     color: '#fff',
                     fontSize: 8,
                   },
-                  // emphasis: {
-                  //   itemStyle: {
-                  //     borderColor: '#25A8F6',
-                  //     borderWidth: 1,
-                  //     areaColor: 'transparent',
-                  //     shadowColor: 'rgba(0, 0, 0, 0)',
-                  //     shadowBlur: 0,
-                  //     shadowOffsetX: 0,
-                  //     shadowOffsetY: 1
-                  //   },
-                  //   label: {
-                  //     show: true,
-                  //     color: '#fff'
-                  //   }
-                  // },
+                  emphasis: {
+                    itemStyle: {
+                      borderColor: '#25A8F6',
+                      borderWidth: 1,
+                      areaColor: 'transparent',
+                      shadowColor: 'rgba(0, 0, 0, 0)',
+                      shadowBlur: 0,
+                      shadowOffsetX: 0,
+                      shadowOffsetY: 1,
+                    },
+                    label: {
+                      color: '#fff',
+                    },
+                  },
+                  select: {
+                    itemStyle: {
+                      areaColor: 'transparent',
+                    },
+                    label: {
+                      show: false,
+                    },
+                  },
                   data: geoData,
                 },
               ],
