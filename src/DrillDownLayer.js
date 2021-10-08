@@ -3,10 +3,11 @@ import AMapLoader from '@amap/amap-jsapi-loader';
 
 import * as echarts from 'echarts';
 
-const DrillDownLayer = ({ onChage }) => {
+const DrillDownLayer = ({ onChage, onClick, onReady }) => {
   const containerRef = useRef(null);
   const chartRef = useRef(null);
   const locateBreadcrumbRef = useRef();
+  const isReady = useRef(false);
 
   const drawMap = ({ level = 'country', target = '中国' } = {}) => {
     const district = new AMap.DistrictSearch({
@@ -87,24 +88,10 @@ const DrillDownLayer = ({ onChage }) => {
                 // roam: 'scale',
               },
               series: [
-                // {
-                //   type: 'effectScatter', //点
-                //   coordinateSystem: 'geo',
-                //   showEffectOn: 'render',
-                //   zlevel: 1,
-                //   rippleEffect: { period: 1, scale: 4, brushType: 'fill' },
-                //   itemStyle: {
-                //     normal: {
-                //       color: '#1DE9B6',
-                //       shadowBlur: 10,
-                //       shadowColor: '#333',
-                //     },
-                //   },
-                //   symbolSize: 5,
-                //   data: [{ value: [118.8062, 31.9208] }],
-                // },
+               
                 {
-                  name: 'amap',
+                  id: 'map',
+                  name: 'map',
                   type: 'map',
                   // roam: 'scale',
                   map: target,
@@ -118,7 +105,6 @@ const DrillDownLayer = ({ onChage }) => {
                     borderColor: '#25A8F6',
                   },
                   label: {
-                    // show: true,
                     color: '#fff',
                     fontSize: 8,
                   },
@@ -148,6 +134,11 @@ const DrillDownLayer = ({ onChage }) => {
                 },
               ],
             });
+
+            if (!isReady.current) {
+              isReady.current = true;
+              onReady?.(chartRef.current);
+            }
           }
         );
       });
@@ -181,15 +172,20 @@ const DrillDownLayer = ({ onChage }) => {
       },
     })
       .then(() => {
-        chartRef.current.on('click', { seriesName: 'amap' }, (params) => {
-          const { data } = params;
-          if (data?.level === 'district') {
-            return;
+        chartRef.current.on('click', (params) => {
+          const { seriesId, data } = params;
+          if (seriesId === 'map') {
+            if (onClick?.(params) === false) {
+              return;
+            }
+            if (data?.level === 'district') {
+              return;
+            }
+            drawMap({
+              level: data.level,
+              target: data.name,
+            });
           }
-          drawMap({
-            level: data.level,
-            target: data.name,
-          });
         });
         drawMap();
       })
