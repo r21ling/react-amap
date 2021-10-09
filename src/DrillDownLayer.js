@@ -16,6 +16,7 @@ const DrillDownLayer = ({ onChage, onClick, onReady }) => {
       extensions: 'base',
       level,
     });
+    const isCountry = level === 'country';
 
     district.search(target, function (status, result) {
       if (status !== 'complete') {
@@ -72,65 +73,88 @@ const DrillDownLayer = ({ onChage, onClick, onReady }) => {
                 onChage?.(locateBreadcrumbRef.current, areaProps);
               }
             );
+
+            const parentFeature = areaNode.getParentFeature();
+            // 处理全国时的群岛
+            const targetSelfGeoFeatures = isCountry
+              ? Object.assign({}, parentFeature, {
+                  ...parentFeature,
+                  geometry: {
+                    ...parentFeature.geometry,
+                    coordinates: parentFeature.geometry.coordinates.slice(
+                      0,
+                      20
+                    ),
+                  },
+                })
+              : parentFeature;
+
             const mapJSON = {
               type: 'FeatureCollection',
               features,
             };
             echarts.registerMap(target, mapJSON);
             const geoData = features.map((item) => item.properties);
+
+            chartRef.current.clear();
             chartRef.current.setOption({
-              // tooltip: {
-              //   trigger: 'item'
-              // },
               geo: {
-                show: false,
+                show: true,
+                roam: true,
                 map: target,
-                // roam: 'scale',
-              },
-              series: [
-               
-                {
-                  id: 'map',
-                  name: 'map',
-                  type: 'map',
-                  // roam: 'scale',
-                  map: target,
+                regions: geoData,
+                scaleLimit: {
+                  min: 1,
+                  max: 11,
+                },
+                itemStyle: {
+                  areaColor: 'transparent',
+                  borderColor: '#25A8F6',
+                  borderWidth: 1,
+                },
+                label: {
+                  show: true,
+                  color: '#fff',
+                },
+                emphasis: {
                   itemStyle: {
-                    borderWidth: 2,
-                    shadowOffsetY: 4,
-                    shadowOffsetX: 4,
-                    shadowBlur: 10,
-                    areaColor: 'transparent',
-                    color: 'transparent',
                     borderColor: '#25A8F6',
+                    borderWidth: 1,
+                    areaColor: 'transparent',
+                    shadowColor: 'rgba(0, 0, 0, 0)',
+                    shadowBlur: 0,
+                    shadowOffsetX: 0,
+                    shadowOffsetY: 1,
                   },
                   label: {
+                    show: true,
                     color: '#fff',
-                    fontSize: 8,
                   },
-                  emphasis: {
-                    itemStyle: {
-                      borderColor: '#25A8F6',
-                      borderWidth: 1,
-                      areaColor: 'transparent',
-                      shadowColor: 'rgba(0, 0, 0, 0)',
-                      shadowBlur: 0,
-                      shadowOffsetX: 0,
-                      shadowOffsetY: 1,
-                    },
-                    label: {
-                      color: '#fff',
-                    },
+                },
+                select: {
+                  itemStyle: {
+                    areaColor: 'transparent',
                   },
-                  select: {
-                    itemStyle: {
-                      areaColor: 'transparent',
-                    },
-                    label: {
-                      show: false,
-                    },
+                  label: {
+                    show: false,
                   },
-                  data: geoData,
+                },
+              },
+              series: [
+                {
+                  type: 'lines',
+                  coordinateSystem: 'geo',
+                  data: targetSelfGeoFeatures.geometry.coordinates
+                    .flat()
+                    .map((item) => ({
+                      coords: item,
+                    })),
+                  polyline: true,
+                  large: true,
+                  lineStyle: {
+                    color: '#25A8F6',
+                    width: 3,
+                  },
                 },
               ],
             });
@@ -173,17 +197,17 @@ const DrillDownLayer = ({ onChage, onClick, onReady }) => {
     })
       .then(() => {
         chartRef.current.on('click', (params) => {
-          const { seriesId, data } = params;
-          if (seriesId === 'map') {
+          const { componentType, region } = params;
+          if (componentType === 'geo') {
             if (onClick?.(params) === false) {
               return;
             }
-            if (data?.level === 'district') {
+            if (region?.level === 'district') {
               return;
             }
             drawMap({
-              level: data.level,
-              target: data.name,
+              level: region.level,
+              target: region.name,
             });
           }
         });

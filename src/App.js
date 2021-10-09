@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import DrillDownLayer from './DrillDownLayer';
 
 export default function App() {
@@ -33,18 +33,18 @@ export default function App() {
             ],
           });
         } else {
-          chartRef.current.setOption({
-            series: [
-              {
-                id: 'effectScatter',
-                data: [],
-              },
-            ],
-          });
+          // chartRef.current.setOption({
+          //   series: [
+          //     {
+          //       id: 'effectScatter',
+          //       data: [],
+          //     },
+          //   ],
+          // });
         }
       }}
       onClick={(params) => {
-        if (params.data.name === '广东') {
+        if (params?.region?.name === '广东') {
           return false;
         }
       }}
