@@ -156,6 +156,30 @@ const DrillDownLayer = ({ onChage, onClick, onReady }) => {
                     width: 3,
                   },
                 },
+                {
+                  type: 'lines',
+                  coordinateSystem: 'geo',
+                  data: [
+                    targetSelfGeoFeatures.geometry.coordinates
+                      .flat()
+                      .map((item) => ({
+                        coords: item,
+                      }))[0],
+                  ],
+                  polyline: true,
+                  large: true,
+                  lineStyle: {
+                    color: '#25A8F6',
+                    width: 3,
+                  },
+                  effect: {
+                    show: true,
+                    trailLength: 0.2,
+                    symbolSize: 4,
+                    constantSpeed: 80,
+                    color: 'red',
+                  },
+                },
               ],
             });
 
